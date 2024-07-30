@@ -54,7 +54,5 @@ class BaseSystem:
     def auth(self, credential: Credential) -> None:
         self.credential = credential
 
-    def get_transactions(
-        self, from_date: datetime, to_date: datetime
-    ) -> list[Transaction]:
+    def get_transactions(self, from_date: datetime, to_date: datetime) -> list[Transaction]:
         raise NotImplementedError()

@@ -4,14 +4,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
-from base import (
-    BaseSystem,
-    Credential,
-    InvalidCredentialsError,
-    Point,
-    Station,
-    Transaction,
-)
+from base import BaseSystem, Credential, InvalidCredentialsError, Point, Station, Transaction
 
 
 class GasStationSystem(BaseSystem):
@@ -43,9 +36,7 @@ class GasStationSystem(BaseSystem):
             "login": self.credential.login,
             "password": self.credential.password,
         }
-        auth_response = self.connection.post(
-            url=auth_url, json=payload, headers=self.headers
-        )
+        auth_response = self.connection.post(url=auth_url, json=payload, headers=self.headers)
         if auth_response.status_code != 200:
             raise InvalidCredentialsError("Invalid credentials")
 
@@ -91,9 +82,7 @@ class GasStationSystem(BaseSystem):
 
                 self.transactions.append(transaction)
 
-    def get_transactions(
-            self, from_date: datetime, to_date: datetime
-    ) -> list[Transaction]:
+    def get_transactions(self, from_date: datetime, to_date: datetime) -> list[Transaction]:
         self.get_stations()
 
         transactions_url = f"{self.base_url}/account/transactions?page_size=100"
@@ -112,33 +101,23 @@ class GasStationSystem(BaseSystem):
             self.headers["x-winter-request-handler"] = "onFilter"
 
             # parse the first page to find the total number of pages
-            response = self.connection.post(
-                url=transactions_url.format(1), json=payload, headers=self.headers
-            )
+            response = self.connection.post(url=transactions_url.format(1), json=payload, headers=self.headers)
 
-            pagination_info = BeautifulSoup(
-                response.json()["#data-pagination"], "html.parser"
-            )
+            pagination_info = BeautifulSoup(response.json()["#data-pagination"], "html.parser")
             page_links = pagination_info.find_all("a", class_="page-link")
 
             max_page = 0
             for link in page_links:
                 page_data = link.get("data-request-data", None)
                 if page_data:
-                    page_number = (
-                        int(re.search(r"\d+", page_data).group())
-                        if re.search(r"\d+", page_data)
-                        else 0
-                    )
+                    page_number = int(re.search(r"\d+", page_data).group()) if re.search(r"\d+", page_data) else 0
                     max_page = max(max_page, page_number)
 
             # parse transactions from first page
             self.parse_transactions(response.json()["#data-table"])
             # parse other pages
             for i in range(2, max_page + 1):
-                response = self.connection.post(
-                    url=transactions_url.format(2), json=payload, headers=self.headers
-                )
+                response = self.connection.post(url=transactions_url.format(2), json=payload, headers=self.headers)
                 self.parse_transactions(response.json()["#data-table"])
 
         self.connection.close()
